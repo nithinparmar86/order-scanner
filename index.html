@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>Order Scanner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#0d1117;--surf:#161b22;--s2:#1c232e;--bdr:#2a3345;--grn:#00d9a3;--blu:#0ea5e9;--wrn:#f59e0b;--red:#ef4444;--txt:#e6edf3;--mut:#7d8fa0}
@@ -33,6 +34,10 @@ body{padding:12px 12px 40px}
 .stat.ok .stat-val{color:var(--grn)}.stat.warn .stat-val{color:var(--wrn)}
 .prog-track{height:10px;background:var(--s2);border-radius:99px;overflow:hidden;margin-top:8px}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--grn),var(--blu));border-radius:99px;width:0%;transition:width .5s ease}
+#liveVideo{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;display:block;object-fit:cover}
+.cam-wrap{position:relative}
+.scan-line{position:absolute;left:10%;right:10%;height:2px;background:var(--grn);top:50%;box-shadow:0 0 8px var(--grn);border-radius:2px;display:none;animation:scanpulse 1.5s ease-in-out infinite}
+@keyframes scanpulse{0%,100%{opacity:.4}50%{opacity:1}}
 .upload-zone{border:2px dashed var(--bdr);border-radius:12px;padding:24px;text-align:center;cursor:pointer;margin-top:10px}
 .upload-zone p{font-size:13px;color:var(--mut);margin-top:5px}
 input[type=file]{display:none}
@@ -40,6 +45,7 @@ input[type=file]{display:none}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);text-align:left;position:sticky;top:0;background:var(--surf);border-bottom:1px solid var(--bdr)}
 td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
+tbody tr:active{background:var(--s2)}
 .bc-txt{font-family:monospace;font-size:12px;color:var(--mut)}
 .pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
 .p-done{background:rgba(0,217,163,.15);color:var(--grn)}.p-part{background:rgba(245,158,11,.15);color:var(--wrn)}.p-pend{background:rgba(239,68,68,.1);color:var(--red)}
@@ -64,7 +70,6 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .search{background:var(--bg);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:7px 11px;font-size:13px;outline:none;width:130px}
 .search:focus{border-color:var(--grn)}
-.cam-ios-btn{width:100%;padding:18px;font-size:16px;font-weight:700;border-radius:12px;background:var(--blu);color:#fff;border:none;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:10px}
 .loading-screen{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--grn);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -97,11 +102,11 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
   <div class="setup-card">
     <div style="font-size:32px;margin-bottom:12px">📦</div>
     <h1>One-time Setup</h1>
-    <p>Uses <strong>Firebase</strong> (free, by Google) so your order file and scan counts sync instantly across every device. You only do this once per device.</p>
+    <p>Uses <strong>Firebase</strong> (free, by Google) to sync your order and scan counts instantly across every device.</p>
     <div style="margin-bottom:20px">
-      <div class="step"><div class="step-n">1</div><div class="step-t">Go to <a href="https://console.firebase.google.com" target="_blank"><strong>console.firebase.google.com</strong></a> → Add project → name it anything → disable Analytics → Create</div></div>
-      <div class="step"><div class="step-n">2</div><div class="step-t">Left sidebar → <strong>Build → Realtime Database</strong> → Create database → pick any location → <strong>Start in test mode</strong> → Enable. Copy the URL shown at the top.</div></div>
-      <div class="step"><div class="step-n">3</div><div class="step-t"><strong>Gear icon ⚙ → Project settings → General tab</strong> → scroll down → Add app → Web icon → register → copy apiKey and projectId from the config shown.</div></div>
+      <div class="step"><div class="step-n">1</div><div class="step-t">Go to <a href="https://console.firebase.google.com" target="_blank"><strong>console.firebase.google.com</strong></a> → Add project → name it → Create</div></div>
+      <div class="step"><div class="step-n">2</div><div class="step-t">Left sidebar → <strong>Build → Realtime Database</strong> → Create database → Test mode → Enable. Copy the URL shown.</div></div>
+      <div class="step"><div class="step-n">3</div><div class="step-t"><strong>Gear ⚙ → Project settings → General</strong> → Add app → Web → register → copy apiKey and projectId.</div></div>
     </div>
     <label class="field-lbl">Database URL</label>
     <input class="txt" id="dbUrl" placeholder="https://your-project-default-rtdb.firebaseio.com" autocorrect="off" autocapitalize="off" spellcheck="false"/>
@@ -111,7 +116,7 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
     <input class="txt" id="fbProjectId" placeholder="your-project-id" autocorrect="off" autocapitalize="off" spellcheck="false"/>
     <button class="btn bp" id="connectBtn">Connect &amp; Start</button>
     <div class="err-box" id="connectErr"></div>
-    <div style="margin-top:12px;font-size:11px;color:var(--mut);text-align:center">Saved in this browser only. Share these 3 values with staff so they can connect too.</div>
+    <div style="margin-top:12px;font-size:11px;color:var(--mut);text-align:center">Share these 3 values with staff — they enter them once and stay connected.</div>
   </div>
 </div>
 
@@ -139,6 +144,7 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
     <button class="tab" data-tab="log">📟 Log</button>
   </div>
 
+  <!-- SCAN TAB -->
   <div class="section active" id="tab-scan">
     <div class="stats">
       <div class="stat ok"><div class="stat-lbl">Scanned</div><div class="stat-val" id="vScanned">0</div></div>
@@ -151,22 +157,22 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
       </div>
       <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
     </div>
+
     <div class="card">
       <span class="lbl">📷 Camera Scanner</span>
-      <div id="iosCamWrap" style="display:none">
-        <label class="cam-ios-btn"><input type="file" id="iosCapture" accept="image/*" capture="environment">📸 Tap to Open Camera</label>
-        <canvas id="iosCanvas" style="display:none"></canvas>
-        <div style="font-size:12px;color:var(--mut);margin-top:8px;text-align:center">Point at barcode → take photo → auto-decoded</div>
+      <div class="cam-wrap">
+        <video id="liveVideo" autoplay playsinline muted></video>
+        <div class="scan-line" id="scanLine"></div>
       </div>
-      <div id="liveCamWrap" style="display:none">
-        <video id="liveVideo" style="width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;display:block;object-fit:cover" autoplay playsinline muted></video>
-        <div class="row" style="margin-top:10px;gap:8px">
-          <button class="btn bc" id="liveCamBtn">▶ Start Camera</button>
-          <label style="font-size:13px;color:var(--mut);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="contScan" checked> Continuous</label>
-        </div>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <button class="btn bc" id="camBtn">▶ Start Camera</button>
+        <label style="font-size:13px;color:var(--mut);display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="contScan" checked> Continuous
+        </label>
+        <select id="camSel" style="display:none;background:var(--bg);border:1px solid var(--bdr);color:var(--txt);padding:7px;border-radius:8px;font-size:12px"></select>
       </div>
-      <div id="camDetecting" style="text-align:center;padding:14px;color:var(--mut);font-size:13px">Detecting camera...</div>
     </div>
+
     <div class="card">
       <span class="lbl">⌨ Manual / USB Scanner</span>
       <input class="inp" id="scanInput" placeholder="Type barcode + Enter" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
@@ -175,6 +181,7 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
     </div>
   </div>
 
+  <!-- ORDER TAB -->
   <div class="section" id="tab-order">
     <div class="card">
       <span class="lbl">Mode</span>
@@ -210,6 +217,7 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
     </div>
   </div>
 
+  <!-- ITEMS TAB -->
   <div class="section" id="tab-items">
     <div class="card" style="padding:0;overflow:hidden">
       <div class="row" style="padding:11px 14px;border-bottom:1px solid var(--bdr);justify-content:space-between">
@@ -226,6 +234,7 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
     </div>
   </div>
 
+  <!-- LOG TAB -->
   <div class="section" id="tab-log">
     <div class="card" style="padding:0;overflow:hidden">
       <div class="row" style="padding:10px 14px;border-bottom:1px solid var(--bdr);justify-content:space-between">
@@ -243,7 +252,8 @@ td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
 <script>
 const LS_KEY='scanner_fb_v2';
 let db=null,orderDef=null,counts={},mode='free';
-let camRunning=false,scanInterval=null,lastCode='',lastCodeTime=0;
+let camRunning=false,quagRunning=false,scanInterval=null;
+let lastCode='',lastCodeTime=0;
 const DEBOUNCE=1500;
 
 function getSaved(){try{return JSON.parse(localStorage.getItem(LS_KEY));}catch(e){return null;}}
@@ -253,9 +263,8 @@ function initFB(cfg){
   try{
     if(firebase.apps.length){firebase.apps.forEach(a=>{try{a.delete();}catch(e){}});}
     firebase.initializeApp({apiKey:cfg.apiKey,databaseURL:cfg.databaseURL,projectId:cfg.projectId,authDomain:cfg.projectId+'.firebaseapp.com'});
-    db=firebase.database();
-    return true;
-  }catch(e){console.error('FB init error:',e);return false;}
+    db=firebase.database();return true;
+  }catch(e){console.error('FB init:',e);return false;}
 }
 function testFB(){return new Promise((res,rej)=>{db.ref('scanner/ping').set(Date.now()).then(()=>res(true)).catch(e=>rej(e));});}
 
@@ -263,10 +272,8 @@ window.addEventListener('load',async()=>{
   const cfg=getSaved();
   if(cfg&&cfg.databaseURL&&cfg.apiKey){
     setLoadMsg('Reconnecting...');
-    if(initFB(cfg)){
-      try{await testFB();launchApp();}
-      catch(e){hideLoad();showSetup('Reconnect failed: '+e.message);}
-    }else{hideLoad();showSetup('Saved config is invalid. Please re-enter.');}
+    if(initFB(cfg)){try{await testFB();launchApp();}catch(e){hideLoad();showSetup('Reconnect failed: '+e.message);}}
+    else{hideLoad();showSetup('Saved config invalid. Please re-enter.');}
   }else{hideLoad();showSetup();}
 });
 
@@ -286,38 +293,31 @@ document.getElementById('connectBtn').addEventListener('click',async()=>{
   document.getElementById('dbUrl').value=dbUrl;
   document.getElementById('fbApiKey').value=apiKey;
   document.getElementById('fbProjectId').value=projectId;
-
   if(!dbUrl||!apiKey||!projectId){errEl.innerHTML='All 3 fields are required.';errEl.style.display='block';return;}
   if(!dbUrl.startsWith('https://')){errEl.innerHTML='Database URL must start with https://';errEl.style.display='block';return;}
   if(!dbUrl.includes('firebaseio.com')&&!dbUrl.includes('firebasedatabase.app')){errEl.innerHTML='Database URL must contain firebaseio.com or firebasedatabase.app';errEl.style.display='block';return;}
   if(!apiKey.startsWith('AIza')){errEl.innerHTML='API Key should start with <strong>AIza</strong> — find it in Project Settings → General → Your Apps → Config';errEl.style.display='block';return;}
-
   document.getElementById('loadingScreen').style.display='flex';
   setLoadMsg('Testing connection...');
   const cfg={databaseURL:dbUrl,apiKey,projectId};
-  let ok=false;
-  try{ok=initFB(cfg);}catch(e){ok=false;}
+  let ok=false;try{ok=initFB(cfg);}catch(e){ok=false;}
   if(!ok){
     hideLoad();
     errEl.innerHTML='<strong>Failed to initialise Firebase.</strong><br><br>Check:<br>• Database URL — copy exactly from Build → Realtime Database<br>• API Key — starts with AIza, from Project Settings → General<br>• Project ID — from Project Settings → General';
     errEl.style.display='block';return;
   }
   try{
-    await testFB();
-    saveConf(cfg);
+    await testFB();saveConf(cfg);
     document.getElementById('setupScreen').style.display='none';
     launchApp();
   }catch(e){
     hideLoad();
-    errEl.innerHTML='<strong>Connected but write failed.</strong><br><br>Your database Rules need to allow read/write.<br><br>Fix: Firebase Console → Build → Realtime Database → <strong>Rules tab</strong> → replace with:<br><code style="display:block;background:#000;padding:8px;border-radius:6px;margin:8px 0;font-size:12px;color:#00d9a3">{ "rules": { ".read": true, ".write": true } }</code>Click <strong>Publish</strong> then try again.<br><br>Error: '+e.message;
+    errEl.innerHTML='<strong>Connected but write failed.</strong><br><br>Fix: Firebase Console → Build → Realtime Database → <strong>Rules tab</strong><br>Replace with:<br><code style="display:block;background:#000;padding:8px;border-radius:6px;margin:8px 0;font-size:12px;color:#00d9a3">{ "rules": { ".read": true, ".write": true } }</code>Click <strong>Publish</strong> then try again.<br><br>Error: '+e.message;
     errEl.style.display='block';
   }
 });
 
-document.getElementById('resetSetupBtn').addEventListener('click',()=>{
-  if(!confirm('Reset Firebase config?'))return;
-  localStorage.removeItem(LS_KEY);location.reload();
-});
+document.getElementById('resetSetupBtn').addEventListener('click',()=>{if(!confirm('Reset Firebase config?'))return;localStorage.removeItem(LS_KEY);location.reload();});
 
 function setSyncStatus(s,l){document.getElementById('dot').className='dot '+s;document.getElementById('syncLbl').textContent=l;}
 
@@ -360,6 +360,7 @@ function beepOk(){beep(880,80);setTimeout(()=>beep(1320,100),90);}
 function beepBad(){beep(180,240,'square');}
 function beepWarn(){beep(440,160);}
 
+// ── File parsing ──────────────────────────────
 const BC=/^(ean|barcode|bar.?code|upc|gtin|sku|item.?code|product.?code|article|code)$/i;
 const QT=/^(qty|quantity|required|req.?qty|amount|count|units|pieces|pcs|ordered|order.?qty)$/i;
 const NM=/^(name|product|description|desc|title|item.?name|product.?name)$/i;
@@ -402,7 +403,7 @@ async function loadFile(file,isReplace=false){
       await db.ref('scanner/counts').set({});
       await db.ref('scanner/mode').set('order');
       toast(items.length+' items uploaded — visible on ALL devices now','ok',4000);
-      logEntry('Loaded "'+file.name+'": '+items.length+' items','ok');
+      logEntry('Loaded "'+file.name+'": '+items.length+' items · '+def.totalRequired+' qty','ok');
       switchTab('scan');
     }catch(err){toast('Error: '+err.message,'bad',4000);setSyncStatus('err','Error');}
   };
@@ -427,6 +428,7 @@ async function resetCounts(){
   toast('Counts reset','warn');
 }
 
+// ── Scan handler ──────────────────────────────
 async function handleCode(code,src='manual'){
   initAudio();
   code=String(code).trim().replace(/\s+/g,'');if(!code)return;
@@ -444,62 +446,135 @@ async function handleCode(code,src='manual'){
     const item=orderDef.items.find(i=>i.barcode===code);
     if(item){
       const cur=counts[code]||0;
-      if(cur>=item.required){bn.className='banner warn';bn.textContent='Already complete: '+code+' ('+cur+'/'+item.required+')';beepWarn();logEntry('OVER-SCAN: '+code,'warn');}
-      else{const nv=cur+1;bn.className='banner ok';bn.textContent='✅ '+code+'  '+nv+'/'+item.required;beepOk();logEntry('ACCEPTED: '+code+' ('+nv+'/'+item.required+') ['+src+']','ok');await fbSet('scanner/counts/'+code,nv);}
-    }else{bn.className='banner bad';bn.textContent='Not in order: '+code;beepBad();logEntry('REJECTED: '+code,'bad');}
+      if(cur>=item.required){
+        bn.className='banner warn';bn.textContent='Already complete: '+code+' ('+cur+'/'+item.required+')';
+        beepWarn();logEntry('OVER-SCAN: '+code,'warn');
+      }else{
+        const nv=cur+1;
+        bn.className='banner ok';bn.textContent='✅ '+code+'  '+nv+'/'+item.required;
+        beepOk();logEntry('ACCEPTED: '+code+' ('+nv+'/'+item.required+') ['+src+']','ok');
+        await fbSet('scanner/counts/'+code,nv);
+      }
+    }else{
+      bn.className='banner bad';bn.textContent='Not in order: '+code;
+      beepBad();logEntry('REJECTED: '+code,'bad');
+    }
   }
   refreshUI();
 }
 
-const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+// ── Camera — works on ALL devices including iPhone Safari ──
 function setupCamera(){
-  document.getElementById('camDetecting').style.display='none';
-  if(isIOS){
-    document.getElementById('iosCamWrap').style.display='block';
-    const input=document.getElementById('iosCapture');
-    const canvas=document.getElementById('iosCanvas');
-    const ctx=canvas.getContext('2d');
-    input.addEventListener('change',async e=>{
-      const file=e.target.files[0];if(!file)return;
-      toast('Decoding...','info',2000);
-      const img=new Image();
-      img.onload=async()=>{
-        canvas.width=img.width;canvas.height=img.height;ctx.drawImage(img,0,0);
-        URL.revokeObjectURL(img.src);
-        let decoded=null;
-        if('BarcodeDetector' in window){try{const r=await new BarcodeDetector().detect(canvas);if(r.length)decoded=r[0].rawValue;}catch(e){}}
-        if(decoded)handleCode(decoded,'ios-camera');
-        else toast('No barcode found — try closer or better lighting','warn',3500);
-        input.value='';
-      };
-      img.src=URL.createObjectURL(file);
-    });
-  }else{
-    document.getElementById('liveCamWrap').style.display='block';
-    const btn=document.getElementById('liveCamBtn');
-    const video=document.getElementById('liveVideo');
-    btn.addEventListener('click',async()=>{
-      initAudio();
-      if(camRunning){
-        camRunning=false;if(scanInterval){clearInterval(scanInterval);scanInterval=null;}
-        if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null;}
-        btn.textContent='▶ Start Camera';btn.className='btn bc';return;
+  const btn=document.getElementById('camBtn');
+  const video=document.getElementById('liveVideo');
+  const scanLine=document.getElementById('scanLine');
+
+  async function listCameras(){
+    try{
+      const devs=await navigator.mediaDevices.enumerateDevices();
+      const cams=devs.filter(d=>d.kind==='videoinput');
+      const sel=document.getElementById('camSel');
+      if(cams.length>1){
+        sel.style.display='block';
+        sel.innerHTML=cams.map((c,i)=>'<option value="'+c.deviceId+'">'+(c.label||'Camera '+i)+'</option>').join('');
+        const ri=cams.findIndex(c=>/back|rear|environment/i.test(c.label));
+        if(ri>-1)sel.selectedIndex=ri;
       }
-      try{
-        video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
-        camRunning=true;btn.textContent='⏹ Stop';btn.className='btn bc on';
-        if('BarcodeDetector' in window){
-          const bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code','itf']});
-          scanInterval=setInterval(async()=>{
-            if(!camRunning||video.readyState<2)return;
-            try{const r=await bd.detect(video);if(r.length){handleCode(r[0].rawValue,'camera');if(!document.getElementById('contScan').checked){clearInterval(scanInterval);scanInterval=null;setTimeout(()=>{if(camRunning)btn.click();},900);}}}catch(e){}
-          },200);
-        }else toast('Use manual input — auto-scan not available in this browser','warn',4000);
-      }catch(e){toast('Camera: '+e.message,'bad',4000);}
-    });
+    }catch(e){}
   }
+
+  async function startCamera(){
+    if(camRunning)return;
+    try{
+      // Get camera permission first then enumerate
+      const testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      testStream.getTracks().forEach(t=>t.stop());
+      await listCameras();
+    }catch(e){toast('Camera permission denied','bad',4000);return;}
+
+    const did=document.getElementById('camSel').value;
+    const constraints=did?{deviceId:{exact:did}}:{facingMode:{ideal:'environment'}};
+
+    // Try native BarcodeDetector first (Chrome, Safari 17+)
+    if('BarcodeDetector' in window){
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({video:constraints});
+        video.srcObject=stream;
+        await video.play();
+        camRunning=true;
+        btn.textContent='⏹ Stop Camera';btn.className='btn bc on';
+        scanLine.style.display='block';
+        logEntry('Camera started (native)','ok');
+        const bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code','itf','codabar']});
+        const tick=async()=>{
+          if(!camRunning)return;
+          if(video.readyState>=2){
+            try{
+              const results=await bd.detect(video);
+              if(results.length>0){
+                handleCode(results[0].rawValue,'camera');
+                if(!document.getElementById('contScan').checked){
+                  clearInterval(scanInterval);scanInterval=null;
+                  setTimeout(()=>{if(camRunning)scanInterval=setInterval(tick,250);},1000);
+                  return;
+                }
+              }
+            }catch(e){}
+          }
+          if(camRunning)scanInterval=setTimeout(tick,250);
+        };
+        scanInterval=setTimeout(tick,500);
+        return;
+      }catch(e){logEntry('Native BarcodeDetector failed, trying Quagga','warn');}
+    }
+
+    // Fallback: Quagga (works on older browsers and some iPhones)
+    if(typeof Quagga!=='undefined'){
+      Quagga.init({
+        inputStream:{name:'Live',type:'LiveStream',target:video,constraints},
+        locator:{patchSize:'medium',halfSample:true},
+        numOfWorkers:navigator.hardwareConcurrency>2?2:1,
+        frequency:10,
+        decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','code_39_reader','upc_reader','upc_e_reader','itf_reader','codabar_reader']},
+        locate:true
+      },err=>{
+        if(err){toast('Camera error: '+err,'bad',4000);logEntry('Quagga error: '+err,'bad');return;}
+        Quagga.start();
+        quagRunning=true;camRunning=true;
+        btn.textContent='⏹ Stop Camera';btn.className='btn bc on';
+        scanLine.style.display='block';
+        logEntry('Camera started (Quagga)','ok');
+      });
+      Quagga.onDetected(result=>{
+        const code=result&&result.codeResult&&result.codeResult.code;
+        if(!code)return;
+        handleCode(code,'camera');
+        if(!document.getElementById('contScan').checked){
+          Quagga.stop();quagRunning=false;
+          setTimeout(()=>{if(camRunning){Quagga.start();quagRunning=true;}},1000);
+        }
+      });
+    }else{
+      toast('Camera scanning not supported in this browser — use manual input','warn',5000);
+    }
+  }
+
+  function stopCamera(){
+    if(!camRunning)return;
+    camRunning=false;
+    if(scanInterval){clearTimeout(scanInterval);clearInterval(scanInterval);scanInterval=null;}
+    if(quagRunning){try{Quagga.stop();}catch(e){}quagRunning=false;}
+    if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null;}
+    btn.textContent='▶ Start Camera';btn.className='btn bc';
+    scanLine.style.display='none';
+    logEntry('Camera stopped','info');
+  }
+
+  btn.addEventListener('click',()=>{initAudio();if(camRunning)stopCamera();else startCamera();});
+  document.getElementById('camSel').addEventListener('change',()=>{if(camRunning){stopCamera();setTimeout(startCamera,300);}});
 }
 
+// ── Manual input ──────────────────────────────
 const scanInput=document.getElementById('scanInput');
 scanInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const v=scanInput.value.trim();if(v){handleCode(v,'manual');scanInput.value='';}}} );
 scanInput.addEventListener('paste',()=>{setTimeout(()=>{const v=scanInput.value.trim();if(v){handleCode(v,'paste');scanInput.value='';}},60);});
@@ -510,6 +585,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){kbBuf+=e.key;clearTimeout(kbTimer);kbTimer=setTimeout(()=>kbBuf='',600);}
 });
 
+// ── Mode ──────────────────────────────────────
 function applyMode(){
   const isO=(mode==='order');
   document.getElementById('modeFreeBtn').className=isO?'tab':'tab active';
@@ -530,6 +606,7 @@ function applyMode(){
 document.getElementById('modeFreeBtn').addEventListener('click',()=>fbSet('scanner/mode','free'));
 document.getElementById('modeOrderBtn').addEventListener('click',()=>fbSet('scanner/mode','order'));
 
+// ── Refresh / Table / Log ─────────────────────
 function refreshUI(){
   const total=Object.values(counts).reduce((a,b)=>a+b,0);
   document.getElementById('vScanned').textContent=total;
