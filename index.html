@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Order Scanner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0d1117;--surf:#161b22;--s2:#1c232e;--bdr:#2a3345;--grn:#00d9a3;--blu:#0ea5e9;--wrn:#f59e0b;--red:#ef4444;--txt:#e6edf3;--mut:#7d8fa0}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:hidden}
+body{padding:12px 12px 40px}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:15px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:8px;display:block}
+.btn{font-family:inherit;font-size:14px;font-weight:600;padding:11px 16px;border-radius:10px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;touch-action:manipulation}
+.btn:active{opacity:.7}
+.bp{background:var(--grn);color:#000;width:100%;justify-content:center;padding:13px}
+.bs{background:var(--s2);color:var(--txt);border:1px solid var(--bdr)}
+.bd{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.bc{background:var(--blu);color:#fff}
+.bc.on{background:#374151}
+.inp{width:100%;background:var(--bg);border:2px solid var(--bdr);border-radius:10px;color:var(--txt);font-size:16px;padding:13px 14px;outline:none;font-family:monospace}
+.inp:focus{border-color:var(--grn)}
+.banner{padding:12px 14px;border-radius:10px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;background:var(--s2);color:var(--mut);border:1px solid var(--bdr);margin-top:10px;min-height:48px;word-break:break-all}
+.banner.ok{background:rgba(0,217,163,.12);color:var(--grn);border-color:rgba(0,217,163,.35)}
+.banner.bad{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.35)}
+.banner.warn{background:rgba(245,158,11,.12);color:var(--wrn);border-color:rgba(245,158,11,.35)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:14px}
+.stat.ok{border-color:rgba(0,217,163,.35)}.stat.warn{border-color:rgba(245,158,11,.35)}
+.stat-lbl{font-size:11px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-val{font-size:28px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat.ok .stat-val{color:var(--grn)}.stat.warn .stat-val{color:var(--wrn)}
+.prog-track{height:10px;background:var(--s2);border-radius:99px;overflow:hidden;margin-top:8px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--grn),var(--blu));border-radius:99px;width:0%;transition:width .5s ease}
+.upload-zone{border:2px dashed var(--bdr);border-radius:12px;padding:24px;text-align:center;cursor:pointer;margin-top:10px}
+.upload-zone p{font-size:13px;color:var(--mut);margin-top:5px}
+input[type=file]{display:none}
+.tbl-scroll{max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);text-align:left;position:sticky;top:0;background:var(--surf);border-bottom:1px solid var(--bdr)}
+td{padding:9px 12px;border-bottom:1px solid var(--bdr)}
+.bc-txt{font-family:monospace;font-size:12px;color:var(--mut)}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.p-done{background:rgba(0,217,163,.15);color:var(--grn)}.p-part{background:rgba(245,158,11,.15);color:var(--wrn)}.p-pend{background:rgba(239,68,68,.1);color:var(--red)}
+.log{max-height:140px;overflow-y:auto;font-family:monospace;font-size:11px;line-height:1.9;color:var(--mut);padding:8px}
+.lok{color:var(--grn)}.lbad{color:var(--red)}.lwarn{color:var(--wrn)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center}
+.modal-box h3{font-size:16px;font-weight:700;margin-bottom:10px}
+.modal-box p{font-size:13px;color:var(--mut);margin-bottom:18px;line-height:1.6}
+.tab-bar{display:flex;background:var(--s2);border-radius:10px;padding:3px;margin-bottom:12px;gap:3px}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--mut);border-radius:8px;cursor:pointer;border:none;background:none;font-family:inherit;touch-action:manipulation}
+.tab.active{background:var(--surf);color:var(--txt)}
+.section{display:none}.section.active{display:block}
+.toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;width:92%;max-width:340px}
+.toast{font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;animation:tin .2s ease;text-align:center;width:100%}
+.toast.ok{background:var(--grn);color:#000}.toast.bad{background:var(--red);color:#fff}
+.toast.warn{background:var(--wrn);color:#000}.toast.info{background:var(--s2);color:var(--txt);border:1px solid var(--bdr)}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--mut)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--mut);transition:background .3s;flex-shrink:0}
+.dot.ok{background:var(--grn)}.dot.spin{background:var(--wrn);animation:pulse 1s infinite}.dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.search{background:var(--bg);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:7px 11px;font-size:13px;outline:none;width:130px}
+.search:focus{border-color:var(--grn)}
+.cam-ios-btn{width:100%;padding:18px;font-size:16px;font-weight:700;border-radius:12px;background:var(--blu);color:#fff;border:none;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:10px}
+.loading-screen{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--grn);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#setupScreen{position:fixed;inset:0;background:var(--bg);z-index:200;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;padding-top:30px}
+.setup-card{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:480px;width:100%}
+.setup-card h1{font-size:20px;font-weight:800;margin-bottom:8px}
+.setup-card p{font-size:13px;color:var(--mut);line-height:1.7;margin-bottom:16px}
+.step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.step-n{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--grn),var(--blu));color:#000;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-t{font-size:13px;color:var(--mut);line-height:1.6}
+.step-t a{color:var(--blu);text-decoration:none}
+.step-t strong{color:var(--txt)}
+.field-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin-bottom:5px;display:block}
+.txt{width:100%;background:var(--bg);border:2px solid var(--bdr);border-radius:10px;color:var(--txt);font-family:monospace;font-size:12px;padding:11px 13px;outline:none;transition:border-color .2s;margin-bottom:12px}
+.txt:focus{border-color:var(--grn)}
+.txt::placeholder{color:var(--mut)}
+.err-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin-top:10px;display:none;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="toast-wrap" id="toastWrap"></div>
+<div id="modalWrap"></div>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <div style="font-size:14px;color:var(--mut)" id="loadingMsg">Connecting...</div>
+</div>
+
+<div id="setupScreen" style="display:none">
+  <div class="setup-card">
+    <div style="font-size:32px;margin-bottom:12px">📦</div>
+    <h1>One-time Setup</h1>
+    <p>Uses <strong>Firebase</strong> (free, by Google) so your order file and scan counts sync instantly across every device. You only do this once per device.</p>
+    <div style="margin-bottom:20px">
+      <div class="step"><div class="step-n">1</div><div class="step-t">Go to <a href="https://console.firebase.google.com" target="_blank"><strong>console.firebase.google.com</strong></a> → Add project → name it anything → disable Analytics → Create</div></div>
+      <div class="step"><div class="step-n">2</div><div class="step-t">Left sidebar → <strong>Build → Realtime Database</strong> → Create database → pick any location → <strong>Start in test mode</strong> → Enable. Copy the URL shown at the top.</div></div>
+      <div class="step"><div class="step-n">3</div><div class="step-t"><strong>Gear icon ⚙ → Project settings → General tab</strong> → scroll down → Add app → Web icon → register → copy apiKey and projectId from the config shown.</div></div>
+    </div>
+    <label class="field-lbl">Database URL</label>
+    <input class="txt" id="dbUrl" placeholder="https://your-project-default-rtdb.firebaseio.com" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <label class="field-lbl">API Key</label>
+    <input class="txt" id="fbApiKey" placeholder="AIzaSy..." autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <label class="field-lbl">Project ID</label>
+    <input class="txt" id="fbProjectId" placeholder="your-project-id" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <button class="btn bp" id="connectBtn">Connect &amp; Start</button>
+    <div class="err-box" id="connectErr"></div>
+    <div style="margin-top:12px;font-size:11px;color:var(--mut);text-align:center">Saved in this browser only. Share these 3 values with staff so they can connect too.</div>
+  </div>
+</div>
+
+<div id="mainApp" style="display:none">
+  <div class="card" style="padding:12px 15px;margin-bottom:12px">
+    <div class="row" style="justify-content:space-between">
+      <div class="row" style="gap:10px">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#00d9a3,#0ea5e9);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">📦</div>
+        <div>
+          <div style="font-size:16px;font-weight:800">Order Scanner</div>
+          <div class="sync-badge"><span class="dot" id="dot"></span><span id="syncLbl">Connecting...</span></div>
+        </div>
+      </div>
+      <div class="row" style="gap:6px">
+        <button class="btn bs" id="exportBtn" style="font-size:12px;padding:8px 11px">⬇ Export</button>
+        <button class="btn bs" id="resetSetupBtn" style="font-size:12px;padding:8px 11px">⚙</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar" id="mainTabs">
+    <button class="tab active" data-tab="scan">📷 Scan</button>
+    <button class="tab" data-tab="order">📋 Order</button>
+    <button class="tab" data-tab="items">📊 Items</button>
+    <button class="tab" data-tab="log">📟 Log</button>
+  </div>
+
+  <div class="section active" id="tab-scan">
+    <div class="stats">
+      <div class="stat ok"><div class="stat-lbl">Scanned</div><div class="stat-val" id="vScanned">0</div></div>
+      <div class="stat"><div class="stat-lbl" id="scExtraLbl">Unique</div><div class="stat-val" id="vExtra">0</div></div>
+    </div>
+    <div class="card" id="progCard" style="display:none;padding:13px 15px">
+      <div class="row" style="justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--mut);font-weight:600">Order Progress</span>
+        <span style="font-size:18px;font-weight:800;color:var(--grn)" id="progPct">0%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+    <div class="card">
+      <span class="lbl">📷 Camera Scanner</span>
+      <div id="iosCamWrap" style="display:none">
+        <label class="cam-ios-btn"><input type="file" id="iosCapture" accept="image/*" capture="environment">📸 Tap to Open Camera</label>
+        <canvas id="iosCanvas" style="display:none"></canvas>
+        <div style="font-size:12px;color:var(--mut);margin-top:8px;text-align:center">Point at barcode → take photo → auto-decoded</div>
+      </div>
+      <div id="liveCamWrap" style="display:none">
+        <video id="liveVideo" style="width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;display:block;object-fit:cover" autoplay playsinline muted></video>
+        <div class="row" style="margin-top:10px;gap:8px">
+          <button class="btn bc" id="liveCamBtn">▶ Start Camera</button>
+          <label style="font-size:13px;color:var(--mut);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="contScan" checked> Continuous</label>
+        </div>
+      </div>
+      <div id="camDetecting" style="text-align:center;padding:14px;color:var(--mut);font-size:13px">Detecting camera...</div>
+    </div>
+    <div class="card">
+      <span class="lbl">⌨ Manual / USB Scanner</span>
+      <input class="inp" id="scanInput" placeholder="Type barcode + Enter" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <div class="banner" id="banner">Ready to scan...</div>
+      <div style="margin-top:10px"><button class="btn bs" id="resetCountsBtn" style="font-size:13px">↺ Reset Counts</button></div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-order">
+    <div class="card">
+      <span class="lbl">Mode</span>
+      <div class="tab-bar" style="margin-bottom:0">
+        <button class="tab" id="modeFreeBtn">📷 Free Scan</button>
+        <button class="tab active" id="modeOrderBtn">📋 Order Verify</button>
+      </div>
+    </div>
+    <div class="card">
+      <span class="lbl">📄 Order File — shared across all devices</span>
+      <div id="csvStatus" style="font-size:14px;font-weight:600;color:var(--mut);margin-bottom:6px">No order loaded</div>
+      <div id="csvMeta" style="font-size:11px;color:var(--mut);margin-bottom:10px;line-height:1.7"></div>
+      <label class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.txt">
+        <div style="font-size:28px">📁</div>
+        <p><strong style="color:var(--txt)">Tap to upload CSV or Excel</strong></p>
+        <p>Auto-detects EAN / Barcode / SKU / UPC column</p>
+        <p style="margin-top:6px;font-size:12px;color:var(--blu)">Uploads sync to ALL devices instantly</p>
+      </label>
+      <div id="csvActions" style="display:none;margin-top:12px">
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <label class="btn bs" style="font-size:13px;cursor:pointer"><input type="file" id="replaceInput" accept=".csv,.xlsx,.xls,.txt"> 🔄 Replace</label>
+          <button class="btn bd" id="deleteOrderBtn" style="font-size:13px">🗑 Delete Order</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="orderStatsCard" style="display:none">
+      <span class="lbl">Order Stats</span>
+      <div class="stats" style="margin-bottom:0">
+        <div class="stat"><div class="stat-lbl">Required</div><div class="stat-val" id="vReq">0</div></div>
+        <div class="stat" id="scRemain"><div class="stat-lbl">Remaining</div><div class="stat-val" id="vRemain">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-items">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="row" style="padding:11px 14px;border-bottom:1px solid var(--bdr);justify-content:space-between">
+        <span class="lbl" id="tblTitle" style="margin:0">Scanned Barcodes</span>
+        <input class="search" id="search" placeholder="Filter..."/>
+      </div>
+      <div class="tbl-scroll">
+        <div id="emptyState" style="text-align:center;padding:30px;color:var(--mut);font-size:13px">Start scanning — barcodes appear here</div>
+        <table id="tbl" style="display:none">
+          <thead><tr><th>#</th><th>Barcode</th><th id="thReq" style="display:none">Req</th><th>Scanned</th><th id="thSt">Count</th></tr></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-log">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="row" style="padding:10px 14px;border-bottom:1px solid var(--bdr);justify-content:space-between">
+        <span class="lbl" style="margin:0">Scan Log</span>
+        <button class="btn bs" style="font-size:12px;padding:5px 10px" id="clearLogBtn">Clear</button>
+      </div>
+      <div class="log" id="logBody"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const LS_KEY='scanner_fb_v2';
+let db=null,orderDef=null,counts={},mode='free';
+let camRunning=false,scanInterval=null,lastCode='',lastCodeTime=0;
+const DEBOUNCE=1500;
+
+function getSaved(){try{return JSON.parse(localStorage.getItem(LS_KEY));}catch(e){return null;}}
+function saveConf(c){localStorage.setItem(LS_KEY,JSON.stringify(c));}
+
+function initFB(cfg){
+  try{
+    if(firebase.apps.length){firebase.apps.forEach(a=>{try{a.delete();}catch(e){}});}
+    firebase.initializeApp({apiKey:cfg.apiKey,databaseURL:cfg.databaseURL,projectId:cfg.projectId,authDomain:cfg.projectId+'.firebaseapp.com'});
+    db=firebase.database();
+    return true;
+  }catch(e){console.error('FB init error:',e);return false;}
+}
+function testFB(){return new Promise((res,rej)=>{db.ref('scanner/ping').set(Date.now()).then(()=>res(true)).catch(e=>rej(e));});}
+
+window.addEventListener('load',async()=>{
+  const cfg=getSaved();
+  if(cfg&&cfg.databaseURL&&cfg.apiKey){
+    setLoadMsg('Reconnecting...');
+    if(initFB(cfg)){
+      try{await testFB();launchApp();}
+      catch(e){hideLoad();showSetup('Reconnect failed: '+e.message);}
+    }else{hideLoad();showSetup('Saved config is invalid. Please re-enter.');}
+  }else{hideLoad();showSetup();}
+});
+
+function setLoadMsg(m){document.getElementById('loadingMsg').textContent=m;}
+function hideLoad(){document.getElementById('loadingScreen').style.display='none';}
+function showSetup(err=''){
+  document.getElementById('setupScreen').style.display='flex';
+  if(err){const e=document.getElementById('connectErr');e.innerHTML=err;e.style.display='block';}
+}
+
+document.getElementById('connectBtn').addEventListener('click',async()=>{
+  const dbUrl=document.getElementById('dbUrl').value.trim().replace(/\s/g,'').replace(/\/$/,'');
+  const apiKey=document.getElementById('fbApiKey').value.trim().replace(/\s/g,'');
+  const projectId=document.getElementById('fbProjectId').value.trim().replace(/\s/g,'');
+  const errEl=document.getElementById('connectErr');
+  errEl.style.display='none';
+  document.getElementById('dbUrl').value=dbUrl;
+  document.getElementById('fbApiKey').value=apiKey;
+  document.getElementById('fbProjectId').value=projectId;
+
+  if(!dbUrl||!apiKey||!projectId){errEl.innerHTML='All 3 fields are required.';errEl.style.display='block';return;}
+  if(!dbUrl.startsWith('https://')){errEl.innerHTML='Database URL must start with https://';errEl.style.display='block';return;}
+  if(!dbUrl.includes('firebaseio.com')&&!dbUrl.includes('firebasedatabase.app')){errEl.innerHTML='Database URL must contain firebaseio.com or firebasedatabase.app';errEl.style.display='block';return;}
+  if(!apiKey.startsWith('AIza')){errEl.innerHTML='API Key should start with <strong>AIza</strong> — find it in Project Settings → General → Your Apps → Config';errEl.style.display='block';return;}
+
+  document.getElementById('loadingScreen').style.display='flex';
+  setLoadMsg('Testing connection...');
+  const cfg={databaseURL:dbUrl,apiKey,projectId};
+  let ok=false;
+  try{ok=initFB(cfg);}catch(e){ok=false;}
+  if(!ok){
+    hideLoad();
+    errEl.innerHTML='<strong>Failed to initialise Firebase.</strong><br><br>Check:<br>• Database URL — copy exactly from Build → Realtime Database<br>• API Key — starts with AIza, from Project Settings → General<br>• Project ID — from Project Settings → General';
+    errEl.style.display='block';return;
+  }
+  try{
+    await testFB();
+    saveConf(cfg);
+    document.getElementById('setupScreen').style.display='none';
+    launchApp();
+  }catch(e){
+    hideLoad();
+    errEl.innerHTML='<strong>Connected but write failed.</strong><br><br>Your database Rules need to allow read/write.<br><br>Fix: Firebase Console → Build → Realtime Database → <strong>Rules tab</strong> → replace with:<br><code style="display:block;background:#000;padding:8px;border-radius:6px;margin:8px 0;font-size:12px;color:#00d9a3">{ "rules": { ".read": true, ".write": true } }</code>Click <strong>Publish</strong> then try again.<br><br>Error: '+e.message;
+    errEl.style.display='block';
+  }
+});
+
+document.getElementById('resetSetupBtn').addEventListener('click',()=>{
+  if(!confirm('Reset Firebase config?'))return;
+  localStorage.removeItem(LS_KEY);location.reload();
+});
+
+function setSyncStatus(s,l){document.getElementById('dot').className='dot '+s;document.getElementById('syncLbl').textContent=l;}
+
+function launchApp(){
+  hideLoad();
+  document.getElementById('mainApp').style.display='block';
+  setSyncStatus('spin','Syncing...');
+  db.ref('scanner/order').on('value',snap=>{orderDef=snap.val()||null;applyMode();refreshUI();setSyncStatus('ok','Live');});
+  db.ref('scanner/counts').on('value',snap=>{counts=snap.val()||{};refreshUI();});
+  db.ref('scanner/mode').on('value',snap=>{if(snap.val())mode=snap.val();applyMode();refreshUI();});
+  setupCamera();
+  logEntry('Connected — syncing across all devices','ok');
+}
+
+async function fbSet(path,val){
+  setSyncStatus('spin','Saving...');
+  try{await db.ref(path).set(val);setSyncStatus('ok','Synced');}
+  catch(e){setSyncStatus('err','Error');toast('Sync error: '+e.message,'bad');}
+}
+
+function toast(msg,type='info',dur=2500){
+  const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},dur);
+}
+function showConfirm(title,body){
+  return new Promise(res=>{
+    const wrap=document.createElement('div');wrap.className='modal-overlay';
+    wrap.innerHTML='<div class="modal-box"><h3>'+title+'</h3><p>'+body+'</p><div class="row" style="justify-content:center;gap:10px"><button class="btn bs" id="mNo" style="font-size:14px;padding:12px 20px">Cancel</button><button class="btn bd" id="mYes" style="font-size:14px;padding:12px 20px">Confirm</button></div></div>';
+    document.getElementById('modalWrap').appendChild(wrap);
+    wrap.querySelector('#mYes').onclick=()=>{wrap.remove();res(true);};
+    wrap.querySelector('#mNo').onclick=()=>{wrap.remove();res(false);};
+  });
+}
+
+let actx;
+function initAudio(){if(actx)return;try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function beep(f,d,t='sine'){if(!actx)return;const o=actx.createOscillator(),g=actx.createGain();o.connect(g);g.connect(actx.destination);o.type=t;o.frequency.value=f;g.gain.value=0.001;const n=actx.currentTime;g.gain.exponentialRampToValueAtTime(0.15,n+0.01);g.gain.exponentialRampToValueAtTime(0.001,n+d/1000);o.start(n);o.stop(n+d/1000+0.05);}
+function beepOk(){beep(880,80);setTimeout(()=>beep(1320,100),90);}
+function beepBad(){beep(180,240,'square');}
+function beepWarn(){beep(440,160);}
+
+const BC=/^(ean|barcode|bar.?code|upc|gtin|sku|item.?code|product.?code|article|code)$/i;
+const QT=/^(qty|quantity|required|req.?qty|amount|count|units|pieces|pcs|ordered|order.?qty)$/i;
+const NM=/^(name|product|description|desc|title|item.?name|product.?name)$/i;
+function dCols(h){return{bi:h.findIndex(c=>BC.test(c)),qi:h.findIndex(c=>QT.test(c)),ni:h.findIndex(c=>NM.test(c))};}
+function toItems(headers,rows){
+  let{bi,qi,ni}=dCols(headers);if(bi<0)bi=0;if(qi<0)qi=(bi>0?-1:1);if(ni<0)ni=(bi>0?-1:2);
+  return rows.map(r=>({barcode:String(r[bi]||'').trim(),required:qi>=0?(parseInt(r[qi])||1):1,name:ni>=0?String(r[ni]||'').trim():''})).filter(r=>r.barcode);
+}
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const sp=l=>l.split(/[,;\t]+/).map(p=>p.replace(/^["']|["']$/g,'').trim());
+  const first=sp(lines[0]);const hasH=first.some(p=>/[a-zA-Z]/.test(p));
+  const headers=hasH?first:[];const data=(hasH?lines.slice(1):lines).map(sp);
+  const{bi}=dCols(headers);
+  return{items:toItems(headers,data),colInfo:'Barcode col: "'+(headers[bi>=0?bi:0]||'col 1')+'"'};
+}
+function parseXLSX(buf){
+  const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});if(!raw.length)return{items:[],colInfo:''};
+  let hi=0;for(let i=0;i<Math.min(5,raw.length);i++){if(raw[i].some(c=>c!=='')){hi=i;break;}}
+  const headers=raw[hi].map(h=>String(h||'').trim());
+  const data=raw.slice(hi+1).filter(r=>r.some(c=>c!==''));
+  const{bi}=dCols(headers);
+  return{items:toItems(headers,data),colInfo:'Sheet:"'+wb.SheetNames[0]+'" Col:"'+(headers[bi>=0?bi:0]||'col1')+'"'};
+}
+
+async function loadFile(file,isReplace=false){
+  if(!file)return;
+  if(!isReplace&&orderDef){const ok=await showConfirm('Replace order?','"'+orderDef.filename+'" and all counts will be replaced on ALL devices.');if(!ok)return;}
+  const ext=file.name.split('.').pop().toLowerCase();
+  const isXL=(ext==='xlsx'||ext==='xls');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const{items,colInfo}=isXL?parseXLSX(e.target.result):parseCSV(e.target.result);
+      if(!items.length){toast('No valid rows found','bad');return;}
+      const def={items,filename:file.name,loadedAt:new Date().toISOString(),totalRequired:items.reduce((s,r)=>s+r.required,0),colInfo};
+      setSyncStatus('spin','Uploading...');
+      await db.ref('scanner/order').set(def);
+      await db.ref('scanner/counts').set({});
+      await db.ref('scanner/mode').set('order');
+      toast(items.length+' items uploaded — visible on ALL devices now','ok',4000);
+      logEntry('Loaded "'+file.name+'": '+items.length+' items','ok');
+      switchTab('scan');
+    }catch(err){toast('Error: '+err.message,'bad',4000);setSyncStatus('err','Error');}
+  };
+  isXL?reader.readAsArrayBuffer(file):reader.readAsText(file);
+}
+
+async function deleteOrder(){
+  const ok=await showConfirm('Delete order?','Removes order and ALL scan counts from every device.');
+  if(!ok)return;
+  await db.ref('scanner/order').remove();
+  await db.ref('scanner/counts').set({});
+  await db.ref('scanner/mode').set('free');
+  toast('Order deleted','warn');
+}
+async function resetCounts(){
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  if(!total){toast('No counts to reset','warn');return;}
+  const ok=await showConfirm('Reset counts?','Sets all scan counts to zero on every device.');
+  if(!ok)return;
+  await db.ref('scanner/counts').set({});
+  document.getElementById('logBody').innerHTML='';
+  toast('Counts reset','warn');
+}
+
+async function handleCode(code,src='manual'){
+  initAudio();
+  code=String(code).trim().replace(/\s+/g,'');if(!code)return;
+  const now=Date.now();
+  if(src==='camera'&&code===lastCode&&(now-lastCodeTime)<DEBOUNCE)return;
+  lastCode=code;lastCodeTime=now;
+  const bn=document.getElementById('banner');
+  if(mode==='free'){
+    const nv=(counts[code]||0)+1;
+    bn.className='banner ok';bn.textContent='✅ '+code+'  ×'+nv;
+    beepOk();logEntry('SCANNED: '+code+' ×'+nv+' ['+src+']','ok');
+    await fbSet('scanner/counts/'+code,nv);
+  }else{
+    if(!orderDef){bn.className='banner warn';bn.textContent='No order loaded — go to Order tab';beepWarn();return;}
+    const item=orderDef.items.find(i=>i.barcode===code);
+    if(item){
+      const cur=counts[code]||0;
+      if(cur>=item.required){bn.className='banner warn';bn.textContent='Already complete: '+code+' ('+cur+'/'+item.required+')';beepWarn();logEntry('OVER-SCAN: '+code,'warn');}
+      else{const nv=cur+1;bn.className='banner ok';bn.textContent='✅ '+code+'  '+nv+'/'+item.required;beepOk();logEntry('ACCEPTED: '+code+' ('+nv+'/'+item.required+') ['+src+']','ok');await fbSet('scanner/counts/'+code,nv);}
+    }else{bn.className='banner bad';bn.textContent='Not in order: '+code;beepBad();logEntry('REJECTED: '+code,'bad');}
+  }
+  refreshUI();
+}
+
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function setupCamera(){
+  document.getElementById('camDetecting').style.display='none';
+  if(isIOS){
+    document.getElementById('iosCamWrap').style.display='block';
+    const input=document.getElementById('iosCapture');
+    const canvas=document.getElementById('iosCanvas');
+    const ctx=canvas.getContext('2d');
+    input.addEventListener('change',async e=>{
+      const file=e.target.files[0];if(!file)return;
+      toast('Decoding...','info',2000);
+      const img=new Image();
+      img.onload=async()=>{
+        canvas.width=img.width;canvas.height=img.height;ctx.drawImage(img,0,0);
+        URL.revokeObjectURL(img.src);
+        let decoded=null;
+        if('BarcodeDetector' in window){try{const r=await new BarcodeDetector().detect(canvas);if(r.length)decoded=r[0].rawValue;}catch(e){}}
+        if(decoded)handleCode(decoded,'ios-camera');
+        else toast('No barcode found — try closer or better lighting','warn',3500);
+        input.value='';
+      };
+      img.src=URL.createObjectURL(file);
+    });
+  }else{
+    document.getElementById('liveCamWrap').style.display='block';
+    const btn=document.getElementById('liveCamBtn');
+    const video=document.getElementById('liveVideo');
+    btn.addEventListener('click',async()=>{
+      initAudio();
+      if(camRunning){
+        camRunning=false;if(scanInterval){clearInterval(scanInterval);scanInterval=null;}
+        if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null;}
+        btn.textContent='▶ Start Camera';btn.className='btn bc';return;
+      }
+      try{
+        video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+        camRunning=true;btn.textContent='⏹ Stop';btn.className='btn bc on';
+        if('BarcodeDetector' in window){
+          const bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code','itf']});
+          scanInterval=setInterval(async()=>{
+            if(!camRunning||video.readyState<2)return;
+            try{const r=await bd.detect(video);if(r.length){handleCode(r[0].rawValue,'camera');if(!document.getElementById('contScan').checked){clearInterval(scanInterval);scanInterval=null;setTimeout(()=>{if(camRunning)btn.click();},900);}}}catch(e){}
+          },200);
+        }else toast('Use manual input — auto-scan not available in this browser','warn',4000);
+      }catch(e){toast('Camera: '+e.message,'bad',4000);}
+    });
+  }
+}
+
+const scanInput=document.getElementById('scanInput');
+scanInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const v=scanInput.value.trim();if(v){handleCode(v,'manual');scanInput.value='';}}} );
+scanInput.addEventListener('paste',()=>{setTimeout(()=>{const v=scanInput.value.trim();if(v){handleCode(v,'paste');scanInput.value='';}},60);});
+let kbBuf='',kbTimer=null;
+document.addEventListener('keydown',e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
+  if(e.key==='Enter'){if(kbBuf.length>=2)handleCode(kbBuf,'usb');kbBuf='';clearTimeout(kbTimer);}
+  else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){kbBuf+=e.key;clearTimeout(kbTimer);kbTimer=setTimeout(()=>kbBuf='',600);}
+});
+
+function applyMode(){
+  const isO=(mode==='order');
+  document.getElementById('modeFreeBtn').className=isO?'tab':'tab active';
+  document.getElementById('modeOrderBtn').className=isO?'tab active':'tab';
+  document.getElementById('progCard').style.display=isO?'':'none';
+  document.getElementById('orderStatsCard').style.display=(isO&&!!orderDef)?'':'none';
+  document.getElementById('thReq').style.display=isO?'':'none';
+  document.getElementById('thSt').textContent=isO?'Status':'Count';
+  document.getElementById('tblTitle').textContent=isO?'Order Items':'Scanned Barcodes';
+  document.getElementById('scExtraLbl').textContent=isO?'Required':'Unique';
+  const has=!!orderDef;
+  document.getElementById('uploadZone').style.display=has?'none':'';
+  document.getElementById('csvActions').style.display=has?'block':'none';
+  document.getElementById('csvStatus').textContent=has?'✅ '+orderDef.filename:'No order loaded';
+  document.getElementById('csvStatus').style.color=has?'var(--grn)':'var(--mut)';
+  document.getElementById('csvMeta').textContent=has?orderDef.items.length+' items · '+orderDef.totalRequired+' qty · '+new Date(orderDef.loadedAt).toLocaleString()+' · '+(orderDef.colInfo||''):'';
+}
+document.getElementById('modeFreeBtn').addEventListener('click',()=>fbSet('scanner/mode','free'));
+document.getElementById('modeOrderBtn').addEventListener('click',()=>fbSet('scanner/mode','order'));
+
+function refreshUI(){
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  document.getElementById('vScanned').textContent=total;
+  if(mode==='free'){document.getElementById('vExtra').textContent=Object.keys(counts).length;}
+  else if(orderDef){
+    const sc=orderDef.items.reduce((s,i)=>s+(counts[i.barcode]||0),0);
+    const rem=Math.max(0,orderDef.totalRequired-sc);
+    document.getElementById('vExtra').textContent=orderDef.totalRequired;
+    document.getElementById('vReq').textContent=orderDef.totalRequired;
+    document.getElementById('vRemain').textContent=rem;
+    document.getElementById('scRemain').className=rem===0?'stat ok':'stat warn';
+    const pct=orderDef.totalRequired?Math.round(sc/orderDef.totalRequired*100):0;
+    document.getElementById('progPct').textContent=pct+'%';
+    document.getElementById('progFill').style.width=pct+'%';
+  }
+  refreshTable(document.getElementById('search').value);
+}
+function refreshTable(filter=''){
+  const tbody=document.getElementById('tblBody'),tbl=document.getElementById('tbl'),empty=document.getElementById('emptyState');
+  const s=filter.toLowerCase();
+  if(mode==='free'){
+    const bcs=Object.keys(counts).filter(b=>!s||b.toLowerCase().includes(s)).sort();
+    if(!bcs.length){tbl.style.display='none';empty.style.display='block';empty.textContent='Start scanning — barcodes appear here';return;}
+    tbl.style.display='table';empty.style.display='none';tbody.innerHTML='';
+    bcs.forEach((b,i)=>{const tr=document.createElement('tr');tr.innerHTML='<td style="color:var(--mut)">'+(i+1)+'</td><td><span class="bc-txt">'+b+'</span></td><td style="display:none"></td><td style="font-weight:700">'+counts[b]+'</td><td><span class="pill p-done">×'+counts[b]+'</span></td>';tbody.appendChild(tr);});
+    return;
+  }
+  if(!orderDef){tbl.style.display='none';empty.style.display='block';empty.textContent='Upload an order file in the Order tab';return;}
+  const items=orderDef.items.filter(i=>!s||i.barcode.toLowerCase().includes(s)||(i.name&&i.name.toLowerCase().includes(s)));
+  if(!items.length){tbl.style.display='none';empty.style.display='block';empty.textContent='No matches';return;}
+  tbl.style.display='table';empty.style.display='none';tbody.innerHTML='';
+  items.forEach((item,i)=>{
+    const sc=counts[item.barcode]||0,pct=Math.round(sc/item.required*100);
+    const pill=sc>=item.required?'Done':sc>0?pct+'%':'Pending';
+    const pc=sc>=item.required?'p-done':sc>0?'p-part':'p-pend';
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td style="color:var(--mut)">'+(i+1)+'</td><td><span class="bc-txt">'+item.barcode+'</span>'+(item.name?'<div style="font-size:10px;color:var(--mut)">'+item.name+'</div>':'')+'</td><td>'+item.required+'</td><td style="font-weight:700">'+sc+'</td><td><span class="pill '+pc+'">'+pill+'</span></td>';
+    tbody.appendChild(tr);
+  });
+}
+function logEntry(text,type='info'){
+  const div=document.createElement('div');div.className='l'+type;div.textContent='['+new Date().toLocaleTimeString()+'] '+text;
+  const lb=document.getElementById('logBody');lb.appendChild(div);lb.scrollTop=lb.scrollHeight;
+}
+function switchTab(name){
+  document.querySelectorAll('#mainTabs .tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='tab-'+name));
+}
+document.querySelectorAll('#mainTabs .tab[data-tab]').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+document.getElementById('fileInput').addEventListener('change',e=>{loadFile(e.target.files[0],false);e.target.value='';});
+document.getElementById('replaceInput').addEventListener('change',e=>{loadFile(e.target.files[0],true);e.target.value='';});
+document.getElementById('deleteOrderBtn').addEventListener('click',deleteOrder);
+document.getElementById('resetCountsBtn').addEventListener('click',resetCounts);
+document.getElementById('clearLogBtn').addEventListener('click',()=>document.getElementById('logBody').innerHTML='');
+document.getElementById('search').addEventListener('input',e=>refreshTable(e.target.value));
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const ts=new Date().toISOString().replace(/[:.]/g,'-');let rows,fname;
+  if(mode==='free'){rows=[['Barcode','TimesScanned'],...Object.keys(counts).sort().map(b=>[b,counts[b]])];fname='free-scan-'+ts+'.csv';}
+  else{if(!orderDef){toast('No order loaded','warn');return;}rows=[['Barcode','Name','Required','Scanned','Remaining','Status']];orderDef.items.forEach(item=>{const sc=counts[item.barcode]||0;rows.push([item.barcode,item.name||'',item.required,sc,Math.max(0,item.required-sc),sc>=item.required?'DONE':sc>0?'PARTIAL':'PENDING']);});fname='order-report-'+ts+'.csv';}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));a.download=fname;document.body.appendChild(a);a.click();a.remove();toast('Exported','ok');}catch(e){toast('Export failed','warn');}
+});
+</script>
+</body>
+</html>
